@@ -3,7 +3,7 @@
  * @author    Quark
  * @copyright 2026 Quark
  * @license   Proprietary
- * @version   6.1.3
+ * @version   6.1.4
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -20,7 +20,7 @@ class Cargus extends CarrierModule
     {
         $this->name = 'cargus';
         $this->tab = 'shipping_logistics';
-        $this->version = '6.1.3';
+        $this->version = '6.1.4';
         $this->author = 'Quark';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -133,6 +133,11 @@ class Cargus extends CarrierModule
     {
         $output = '';
 
+        // Auto-healing logic: If the debugger tab is missing from DB, install it now.
+        if ((int)Tab::getIdFromClassName('AdminCargusDebugger') == 0) {
+            $this->installTab('AdminCargusDebugger', 'Cargus Debugger', -1);
+        }
+
         if (Tools::isSubmit('submitCargusConfig')) {
             Configuration::updateValue('CARGUS_API_URL', rtrim(Tools::getValue('CARGUS_API_URL'), '/') . '/');
             Configuration::updateValue('CARGUS_SUBSCRIPTION_KEY', Tools::getValue('CARGUS_SUBSCRIPTION_KEY'));
@@ -161,7 +166,6 @@ class Cargus extends CarrierModule
             $apiError = $e->getMessage();
         }
 
-        // Generăm link-ul securizat cu token pentru cererile AJAX
         $ajax_link = $this->context->link->getAdminLink('AdminCargusDebugger');
 
         $this->context->smarty->assign([
@@ -175,7 +179,7 @@ class Cargus extends CarrierModule
             'cargus_heavy_threshold' => Configuration::get('CARGUS_HEAVY_THRESHOLD', 31),
             'pickup_locations' => $pickupLocations,
             'api_error' => $apiError,
-            'cargus_ajax_link' => $ajax_link // Variabila trimisă către template
+            'cargus_ajax_link' => $ajax_link
         ]);
 
         return $output . $this->display(__FILE__, 'views/templates/admin/configure.tpl');
