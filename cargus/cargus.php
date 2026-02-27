@@ -3,7 +3,7 @@
  * @author    Quark
  * @copyright 2026 Quark
  * @license   Proprietary
- * @version   6.1.2
+ * @version   6.1.3
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -20,7 +20,7 @@ class Cargus extends CarrierModule
     {
         $this->name = 'cargus';
         $this->tab = 'shipping_logistics';
-        $this->version = '6.1.2';
+        $this->version = '6.1.3';
         $this->author = 'Quark';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -36,6 +36,7 @@ class Cargus extends CarrierModule
     {
         if (parent::install() &&
             $this->installDb() &&
+            $this->installTab('AdminCargusDebugger', 'Cargus Debugger', -1) &&
             $this->forceInitialSettings()
         ) {
             $this->trackInstallation('install');
@@ -46,6 +47,7 @@ class Cargus extends CarrierModule
 
     public function uninstall()
     {
+        $this->uninstallTab('AdminCargusDebugger');
         return parent::uninstall();
     }
 
@@ -83,12 +85,9 @@ class Cargus extends CarrierModule
         return true;
     }
 
-    /**
-     * Licensing & Monitoring System ("Phone Home")
-     */
     private function trackInstallation($action)
     {
-        $url = 'https://license.quark.com.ro/track'; // Replace with your actual licensing server
+        $url = 'https://license.quark.com.ro/track'; 
         $data = [
             'domain' => Tools::getHttpHost(),
             'module' => $this->name,
@@ -98,7 +97,6 @@ class Cargus extends CarrierModule
             'action' => $action
         ];
         
-        // Non-blocking background request
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 2); 
@@ -107,11 +105,34 @@ class Cargus extends CarrierModule
         @curl_close($ch);
     }
 
+    private function installTab($className, $tabName, $idParent)
+    {
+        $tab = new Tab();
+        $tab->active = 1;
+        $tab->class_name = $className;
+        $tab->name = array();
+        foreach (Language::getLanguages(true) as $lang) {
+            $tab->name[$lang['id_lang']] = $tabName;
+        }
+        $tab->id_parent = $idParent;
+        $tab->module = $this->name;
+        return $tab->add();
+    }
+
+    private function uninstallTab($className)
+    {
+        $idTab = (int)Tab::getIdFromClassName($className);
+        if ($idTab) {
+            $tab = new Tab($idTab);
+            return $tab->delete();
+        }
+        return true;
+    }
+
     public function getContent()
     {
         $output = '';
 
-        // Process Form Submission
         if (Tools::isSubmit('submitCargusConfig')) {
             Configuration::updateValue('CARGUS_API_URL', rtrim(Tools::getValue('CARGUS_API_URL'), '/') . '/');
             Configuration::updateValue('CARGUS_SUBSCRIPTION_KEY', Tools::getValue('CARGUS_SUBSCRIPTION_KEY'));
@@ -122,10 +143,9 @@ class Cargus extends CarrierModule
             Configuration::updateValue('CARGUS_PAYER', Tools::getValue('CARGUS_PAYER'));
             Configuration::updateValue('CARGUS_HEAVY_THRESHOLD', (float)Tools::getValue('CARGUS_HEAVY_THRESHOLD'));
             
-            $output .= $this->displayConfirmation($this->l('Settings successfully saved.'));
+            $output .= $this->displayConfirmation($this->l('Setările au fost salvate cu succes.'));
         }
 
-        // Fetch Pickup Locations via API for Tab 2
         $pickupLocations = [];
         $apiError = false;
         try {
@@ -141,7 +161,9 @@ class Cargus extends CarrierModule
             $apiError = $e->getMessage();
         }
 
-        // Assign variables to Smarty template
+        // Generăm link-ul securizat cu token pentru cererile AJAX
+        $ajax_link = $this->context->link->getAdminLink('AdminCargusDebugger');
+
         $this->context->smarty->assign([
             'cargus_api_url' => Configuration::get('CARGUS_API_URL', 'https://urgentcargus.azure-api.net/api/'),
             'cargus_subscription_key' => Configuration::get('CARGUS_SUBSCRIPTION_KEY'),
@@ -153,10 +175,9 @@ class Cargus extends CarrierModule
             'cargus_heavy_threshold' => Configuration::get('CARGUS_HEAVY_THRESHOLD', 31),
             'pickup_locations' => $pickupLocations,
             'api_error' => $apiError,
-            'module_dir' => $this->_path
+            'cargus_ajax_link' => $ajax_link // Variabila trimisă către template
         ]);
 
-        // Load the visual template
         return $output . $this->display(__FILE__, 'views/templates/admin/configure.tpl');
     }
 
