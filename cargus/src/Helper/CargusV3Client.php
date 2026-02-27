@@ -3,7 +3,7 @@
  * @author    Quark
  * @copyright 2026 Quark
  * @license   Proprietary
- * @version   1.0.3
+ * @version   1.0.4
  */
 
 namespace Cargus\Helper;
@@ -25,6 +25,9 @@ class CargusV3Client
         $this->subscriptionKey = \Configuration::get('CARGUS_SUBSCRIPTION_KEY');
     }
 
+    /**
+     * Normalizarea diacriticelor (sedilă și virgulă)
+     */
     public static function normalizeString($string)
     {
         if (empty($string)) {
@@ -33,8 +36,8 @@ class CargusV3Client
 
         $search = [
             'ă', 'Ă', 'â', 'Â', 'î', 'Î',
-            'ș', 'Ș', 'ț', 'Ț', 
-            'ş', 'Ş', 'ţ', 'Ţ'  
+            'ș', 'Ș', 'ț', 'Ț', // Virgulă
+            'ş', 'Ş', 'ţ', 'Ţ'  // Sedilă
         ];
         $replace = [
             'a', 'A', 'a', 'A', 'i', 'I',
@@ -45,16 +48,19 @@ class CargusV3Client
         return str_replace($search, $replace, $string);
     }
 
+    /**
+     * Autentificare cu sistem de Caching (Prevenire HTTP 409)
+     */
     public function login()
     {
         $username = \Configuration::get('CARGUS_USERNAME');
         $password = \Configuration::get('CARGUS_PASSWORD');
 
         if (!$username || !$password || !$this->subscriptionKey) {
-            throw new \Exception('Lipsesc credențiale API. Te rugăm să le configurezi în setările modulului.');
+            throw new \Exception('Lipsesc credențiale API. Te rugăm să le configurezi în Tab-ul 1.');
         }
 
-        // VERIFICARE CACHE: Folosim token-ul existent dacă nu a expirat pentru a evita eroarea 409 Conflict
+        // 1. Verificăm dacă avem un token valid salvat
         $savedToken = \Configuration::get('CARGUS_BEARER_TOKEN');
         $tokenExpire = (int)\Configuration::get('CARGUS_TOKEN_EXPIRE');
 
@@ -63,7 +69,7 @@ class CargusV3Client
             return $this->token;
         }
 
-        // Dacă nu avem token sau a expirat, cerem unul nou
+        // 2. Dacă nu avem token valid, cerem unul nou
         $response = $this->request('LoginUser', 'POST', [
             'UserName' => $username,
             'Password' => $password
@@ -75,13 +81,16 @@ class CargusV3Client
 
         $this->token = $response; 
         
-        // SALVARE CACHE: Salvăm token-ul pentru 7000 secunde (puțin sub limita de 2 ore a JWT)
+        // 3. Salvăm noul token cu o valabilitate de sub 2 ore (7000 secunde)
         \Configuration::updateValue('CARGUS_BEARER_TOKEN', $this->token);
         \Configuration::updateValue('CARGUS_TOKEN_EXPIRE', time() + 7000);
 
         return $this->token;
     }
 
+    /**
+     * Metoda centrală pentru request-uri
+     */
     public function request($endpoint, $method = 'GET', $data = [], $useAuth = true)
     {
         $url = rtrim($this->apiUrl, '/') . '/' . ltrim($endpoint, '/');
@@ -132,16 +141,19 @@ class CargusV3Client
         return $decodedResponse !== null ? $decodedResponse : $response;
     }
 
+    /**
+     * Traducerea erorilor comune
+     */
     private function translateError($rawError)
     {
         if (strpos($rawError, '401') !== false) {
             return 'Credențiale incorecte sau Subscription Key expirat.';
         }
         if (strpos($rawError, '409') !== false) {
-            return 'Conflict de sesiune API (Eroare 409). Te rugăm să aștepți câteva minute.';
+            return 'Conflict de sesiune API (Eroare 409). Sistemul încearcă reînnoirea token-ului.';
         }
         if (strpos($rawError, 'timeout') !== false) {
-            return 'Serverul Cargus a răspuns prea greu. Te rugăm să încerci din nou.';
+            return 'Serverul Cargus a răspuns prea greu.';
         }
         return $rawError; 
     }
