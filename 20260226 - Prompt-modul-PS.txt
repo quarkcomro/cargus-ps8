@@ -12,8 +12,9 @@ Acționează ca o echipă interdisciplinară alcătuită din experți în: progr
 
 
 Ai full acces la directorul Cargus-PS: https://drive.google.com/drive/folders/19mmaXlvUgQWUbvdlmcVY-foAGvT1SRDk?usp=sharing
-În el există un director ”Documentatie-Resurse”, unde găsești fișierele PDF DocumentationAPIV3-2.3.2-EN.pdf și Cargus-Integration-guideline-for-merchants.pdf.
-Tot în folderul Cargus-PS este un director ”cargus-v5.1.22” cu fișierele modulului Cargus v.5.1.22, dezvoltat de Cargus pentru versiunile anterioere de PrestaShop (1.6 și 1.7).
+În el există un director ”Documentatie-Resurse”, unde găsești documentația API - fișierele PDF DocumentationAPIV3-2.3.2-EN.pdf și Cargus-Integration-guideline-for-merchants.pdf.
+În directorul Cargus-API găsești screenshot-uri din interfața API Cargus (https://urgentcargus.developer.azure-api.net/api-details). Dacă ai nevoie de acolo de Tag-uri, Request parameters, Request headers, Request body, Responses, Definitions, application/json, text/json, application/xml, text/xml sau orice alte detalii, ți le aduc.
+Tot în folderul Cargus-PS este un director ”cargus-v5.1.22” cu fișierele modulului Cargus v.5.1.22, dezvoltat de Cargus pentru versiunile anterioere de PrestaShop (1.6 și 1.7). În directorul cargus-admin-screenshots sunt screenshot-uri cu interfața admin a modulului dezvoltat de ei.
 Directorul ”cargus-v6.0.00” este directorul de lucru, în care lucrăm noi.
 
 Dacă îți este util, aici găsești și sursa Gitlab unde cei de la Cargus au dezvoltat modulul inițial.
@@ -144,4 +145,5 @@ Punem execuția SQL într-un bloc try...catch.
 Dacă o interogare dă greș (aruncă o excepție), intrăm în zona de catch.
 Acolo rulăm un script "invers" (un DROP TABLE IF EXISTS pentru toate tabelele pe care modulul a încercat să le creeze).
 Astfel, baza de date rămâne curată, iar administratorul vede eroarea clară fără să aibă tabele "orfane" în sistem.
+
 
