@@ -4,8 +4,8 @@
     </div>
 
     <ul class="nav nav-tabs" id="cargusConfigTabs" role="tablist">
-        <li class="active"><a href="#tab-api" role="tab" data-toggle="tab">1. {l s='ACCOUNT & API' mod='cargus'}</a></li>
-        <li><a href="#tab-preferences" role="tab" data-toggle="tab">2. {l s='PREFERENCES & SERVICES' mod='cargus'}</a></li>
+        <li class="active"><a href="#tab-api" role="tab" data-toggle="tab">1. {l s='CONT & API' mod='cargus'}</a></li>
+        <li><a href="#tab-preferences" role="tab" data-toggle="tab">2. {l s='PREFERINȚE & SERVICII' mod='cargus'}</a></li>
         <li><a href="#tab-debugger" role="tab" data-toggle="tab">3. {l s='API DEBUGGER' mod='cargus'}</a></li>
     </ul>
 
@@ -85,13 +85,11 @@
                     <div class="col-lg-6">
                         <select name="CARGUS_DEFAULT_SERVICE" class="form-control">
                             <option value="">-- {l s='Selectează Serviciu' mod='cargus'} --</option>
-                            {if $services}
-                                {foreach from=$services item=service}
-                                    <option value="{$service.ServiceId|escape:'htmlall':'UTF-8'}" {if $cargus_default_service == $service.ServiceId}selected{/if}>
-                                        {$service.Name|escape:'htmlall':'UTF-8'}
-                                    </option>
-                                {/foreach}
-                            {/if}
+                            {foreach from=$cargus_services item=service}
+                                <option value="{$service.id|escape:'htmlall':'UTF-8'}" {if $cargus_default_service == $service.id}selected{/if}>
+                                    {$service.name|escape:'htmlall':'UTF-8'}
+                                </option>
+                            {/foreach}
                         </select>
                     </div>
                 </div>
@@ -130,10 +128,10 @@
                     <label class="control-label col-lg-3">{l s='Deschidere Colet' mod='cargus'}</label>
                     <div class="col-lg-6">
                         <span class="switch prestashop-switch fixed-width-lg">
-                            <input type="radio" name="CARGUS_OPEN_PACKAGE" id="CARGUS_OPEN_PACKAGE_on" value="1" {if $cargus_open_package == 1}checked="checked"{/if}>
-                            <label for="CARGUS_OPEN_PACKAGE_on">Yes</label>
-                            <input type="radio" name="CARGUS_OPEN_PACKAGE" id="CARGUS_OPEN_PACKAGE_off" value="0" {if $cargus_open_package == 0}checked="checked"{/if}>
-                            <label for="CARGUS_OPEN_PACKAGE_off">No</label>
+                            <input type="radio" name="CARGUS_OPEN_PACKAGE" id="OP_ON" value="1" {if $cargus_open_package == 1}checked{/if}>
+                            <label for="OP_ON">Yes</label>
+                            <input type="radio" name="CARGUS_OPEN_PACKAGE" id="OP_OFF" value="0" {if $cargus_open_package == 0}checked{/if}>
+                            <label for="OP_OFF">No</label>
                             <a class="slide-button btn"></a>
                         </span>
                     </div>
@@ -143,23 +141,23 @@
                     <label class="control-label col-lg-3">{l s='Livrare Sâmbăta' mod='cargus'}</label>
                     <div class="col-lg-6">
                         <span class="switch prestashop-switch fixed-width-lg">
-                            <input type="radio" name="CARGUS_SATURDAY_DELIVERY" id="CARGUS_SATURDAY_DELIVERY_on" value="1" {if $cargus_saturday_delivery == 1}checked="checked"{/if}>
-                            <label for="CARGUS_SATURDAY_DELIVERY_on">Yes</label>
-                            <input type="radio" name="CARGUS_SATURDAY_DELIVERY" id="CARGUS_SATURDAY_DELIVERY_off" value="0" {if $cargus_saturday_delivery == 0}checked="checked"{/if}>
-                            <label for="CARGUS_SATURDAY_DELIVERY_off">No</label>
+                            <input type="radio" name="CARGUS_SATURDAY_DELIVERY" id="SD_ON" value="1" {if $cargus_saturday_delivery == 1}checked{/if}>
+                            <label for="SD_ON">Yes</label>
+                            <input type="radio" name="CARGUS_SATURDAY_DELIVERY" id="SD_OFF" value="0" {if $cargus_saturday_delivery == 0}checked{/if}>
+                            <label for="SD_OFF">No</label>
                             <a class="slide-button btn"></a>
                         </span>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="control-label col-lg-3">{l s='Asigurare (Valoare Declarată)' mod='cargus'}</label>
+                    <label class="control-label col-lg-3">{l s='Asigurare' mod='cargus'}</label>
                     <div class="col-lg-6">
                         <span class="switch prestashop-switch fixed-width-lg">
-                            <input type="radio" name="CARGUS_INSURANCE" id="CARGUS_INSURANCE_on" value="1" {if $cargus_insurance == 1}checked="checked"{/if}>
-                            <label for="CARGUS_INSURANCE_on">Yes</label>
-                            <input type="radio" name="CARGUS_INSURANCE" id="CARGUS_INSURANCE_off" value="0" {if $cargus_insurance == 0}checked="checked"{/if}>
-                            <label for="CARGUS_INSURANCE_off">No</label>
+                            <input type="radio" name="CARGUS_INSURANCE" id="INS_ON" value="1" {if $cargus_insurance == 1}checked{/if}>
+                            <label for="INS_ON">Yes</label>
+                            <input type="radio" name="CARGUS_INSURANCE" id="INS_OFF" value="0" {if $cargus_insurance == 0}checked{/if}>
+                            <label for="INS_OFF">No</label>
                             <a class="slide-button btn"></a>
                         </span>
                     </div>
@@ -167,45 +165,32 @@
 
                 <div class="form-group">
                     <label class="control-label col-lg-3">{l s='Preț Bazic Standard' mod='cargus'}</label>
-                    <div class="col-lg-6">
-                        <input type="text" name="CARGUS_BASIC_PRICE_STD" value="{$cargus_basic_price_std|escape:'htmlall':'UTF-8'}" class="form-control" />
-                    </div>
+                    <div class="col-lg-6"><input type="text" name="CARGUS_BASIC_PRICE_STD" value="{$cargus_basic_price_std}" class="form-control" /></div>
                 </div>
-
                 <div class="form-group">
                     <label class="control-label col-lg-3">{l s='Preț Bazic PUDO' mod='cargus'}</label>
-                    <div class="col-lg-6">
-                        <input type="text" name="CARGUS_BASIC_PRICE_PUDO" value="{$cargus_basic_price_pudo|escape:'htmlall':'UTF-8'}" class="form-control" />
-                    </div>
+                    <div class="col-lg-6"><input type="text" name="CARGUS_BASIC_PRICE_PUDO" value="{$cargus_basic_price_pudo}" class="form-control" /></div>
                 </div>
-
                 <div class="form-group">
                     <label class="control-label col-lg-3">{l s='Preț KG Extra' mod='cargus'}</label>
-                    <div class="col-lg-6">
-                        <input type="text" name="CARGUS_EXTRA_KG_PRICE" value="{$cargus_extra_kg_price|escape:'htmlall':'UTF-8'}" class="form-control" />
-                    </div>
+                    <div class="col-lg-6"><input type="text" name="CARGUS_EXTRA_KG_PRICE" value="{$cargus_extra_kg_price}" class="form-control" /></div>
                 </div>
-
                 <div class="form-group">
-                    <label class="control-label col-lg-3">{l s='Taxă Ramburs (COD Fee)' mod='cargus'}</label>
-                    <div class="col-lg-6">
-                        <input type="text" name="CARGUS_COD_FEE" value="{$cargus_cod_fee|escape:'htmlall':'UTF-8'}" class="form-control" />
-                    </div>
+                    <label class="control-label col-lg-3">{l s='Taxă Ramburs' mod='cargus'}</label>
+                    <div class="col-lg-6"><input type="text" name="CARGUS_COD_FEE" value="{$cargus_cod_fee}" class="form-control" /></div>
                 </div>
 
                 <hr>
-
                 <div class="form-group">
                     <label class="control-label col-lg-3">{l s='Prag Greutate Agabaritic (KG)' mod='cargus'}</label>
                     <div class="col-lg-6">
-                        <input type="number" step="0.1" name="CARGUS_HEAVY_THRESHOLD" value="{$cargus_heavy_threshold|escape:'htmlall':'UTF-8'}" class="form-control" />
-                        <p class="help-block">{l s='Acesta declanșează logica "Smart Split" pentru Heavy Cargo.' mod='cargus'}</p>
+                        <input type="number" step="0.1" name="CARGUS_HEAVY_THRESHOLD" value="{$cargus_heavy_threshold}" class="form-control" />
                     </div>
                 </div>
 
                 <div class="panel-footer">
                     <button type="submit" value="1" name="submitCargusConfig" class="btn btn-default pull-right">
-                        <i class="process-icon-save"></i> {l s='Salvează Configurarea Modulului' mod='cargus'}
+                        <i class="process-icon-save"></i> {l s='Salvează' mod='cargus'}
                     </button>
                 </div>
             </form>
@@ -214,22 +199,13 @@
         <div class="tab-pane" id="tab-debugger">
             <div class="row">
                 <div class="col-lg-12">
-                    <button class="btn btn-primary" id="btn-test-locations" style="margin-right: 10px;">
-                        <i class="icon-map-marker"></i> {l s='Test Locații' mod='cargus'}
-                    </button>
-                    <button class="btn btn-default" id="btn-test-tarife" style="margin-right: 10px;">
-                        <i class="icon-money"></i> {l s='Test Tarife' mod='cargus'}
-                    </button>
-                    <button class="btn btn-default" id="btn-test-servicii">
-                        <i class="icon-cogs"></i> {l s='Test Servicii' mod='cargus'}
-                    </button>
+                    <button class="btn btn-primary" id="btn-test-locations"><i class="icon-map-marker"></i> {l s='Test Locații' mod='cargus'}</button>
                 </div>
             </div>
-            
             <div class="row" style="margin-top: 20px;">
                 <div class="col-lg-12">
-                    <div id="cargus-console" class="api-tester-console-output" style="background: #1e1e1e; color: #4caf50; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace;">
-                        System ready for testing...
+                    <div id="cargus-console" style="background: #1e1e1e; color: #4caf50; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace;">
+                        {l s='Sistem gata pentru testare...' mod='cargus'}
                     </div>
                 </div>
             </div>
@@ -240,46 +216,19 @@
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function() {
     var consoleDiv = document.getElementById('cargus-console');
-    var baseAjaxUrl = '{$cargus_ajax_link|escape:"javascript":"UTF-8"}';
-
     function appendLog(message, isError) {
         var p = document.createElement('div');
         p.style.color = isError ? '#ff4c4c' : '#4caf50';
-        p.style.marginBottom = '5px';
         p.innerText = '[' + new Date().toLocaleTimeString() + '] > ' + message;
         consoleDiv.appendChild(p);
         consoleDiv.scrollTop = consoleDiv.scrollHeight;
     }
-
-    function runAjaxTest(actionName, btnId, loadingText) {
-        var btn = document.getElementById(btnId);
-        if(!btn) return;
-        
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            appendLog(loadingText, false);
-            
-            var targetUrl = baseAjaxUrl + '&ajax=1&action=' + actionName;
-            
-            fetch(targetUrl, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                appendLog(data.message, !data.success);
-            })
-            .catch(function(error) {
-                appendLog('Eroare Rețea/Server: ' + error.message, true);
-            });
-        });
-    }
-
-    runAjaxTest('TestLocations', 'btn-test-locations', 'Se testează comunicarea cu API-ul...');
-    runAjaxTest('TestTarife', 'btn-test-tarife', 'Se testează punctul de calcul...');
-    runAjaxTest('TestServicii', 'btn-test-servicii', 'Se testează punctul de servicii...');
+    document.getElementById('btn-test-locations').addEventListener('click', function(e) {
+        e.preventDefault();
+        appendLog('Se testează comunicarea cu API-ul...', false);
+        fetch('{$cargus_ajax_link|escape:"javascript":"UTF-8"}&ajax=1&action=TestLocations', { method: 'POST' })
+        .then(r => r.json()).then(d => appendLog(d.message, !d.success))
+        .catch(e => appendLog('Eroare Rețea: ' + e.message, true));
+    });
 });
 </script>
