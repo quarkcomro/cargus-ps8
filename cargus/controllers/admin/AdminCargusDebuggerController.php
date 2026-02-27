@@ -3,7 +3,7 @@
  * @author    Quark
  * @copyright 2026 Quark
  * @license   Proprietary
- * @version   1.0.1
+ * @version   1.0.2
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -22,22 +22,19 @@ class AdminCargusDebuggerController extends ModuleAdminController
         $this->ajax = true;
     }
 
-    /**
-     * În PrestaShop 8, cererile cu action=TestLocations caută automat
-     * o metodă numită ajaxProcessTestLocations()
-     */
     public function ajaxProcessTestLocations()
     {
         $client = new CargusV3Client();
         
         try {
-            // Facem ping pe Counties doar pentru verificarea conexiunii globale
-            $response = $client->request('Counties', 'GET');
+            // Testăm exact endpoint-ul specificat în manual (5.3)
+            $response = $client->request('PickupLocations', 'GET');
             
             if (isset($response['error'])) {
                 die(json_encode([
                     'success' => false,
-                    'message' => $response['error']
+                    // Returnăm eroarea + endpoint-ul pentru a înțelege clar dacă problema e de rută
+                    'message' => 'API Error: ' . $response['error'] . ' (Endpoint verificat: /PickupLocations)'
                 ]));
             }
 
@@ -45,7 +42,7 @@ class AdminCargusDebuggerController extends ModuleAdminController
             
             die(json_encode([
                 'success' => true,
-                'message' => "Succes! Conexiune validă. Am preluat {$count} județe din Cargus V3."
+                'message' => "Succes! Conexiune validă. Am preluat {$count} locații (PickupLocations) din Cargus V3."
             ]));
             
         } catch (Exception $e) {
