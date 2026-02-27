@@ -3,7 +3,7 @@
  * @author    Quark
  * @copyright 2026 Quark
  * @license   Proprietary
- * @version   6.1.6
+ * @version   6.1.7
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -20,7 +20,7 @@ class Cargus extends CarrierModule
     {
         $this->name = 'cargus';
         $this->tab = 'shipping_logistics';
-        $this->version = '6.1.6';
+        $this->version = '6.1.7';
         $this->author = 'Quark';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -147,7 +147,10 @@ class Cargus extends CarrierModule
             Configuration::updateValue('CARGUS_USERNAME', Tools::getValue('CARGUS_USERNAME'));
             Configuration::updateValue('CARGUS_PASSWORD', Tools::getValue('CARGUS_PASSWORD'));
             
-            // Tab 2 Fields
+            // Pentru securitate - forțăm curățarea token-ului la schimbarea parolei sau userului
+            Configuration::deleteByName('CARGUS_BEARER_TOKEN');
+            Configuration::deleteByName('CARGUS_TOKEN_EXPIRE');
+            
             Configuration::updateValue('CARGUS_PICKUP_LOCATION', Tools::getValue('CARGUS_PICKUP_LOCATION'));
             Configuration::updateValue('CARGUS_PRICE_PLAN', Tools::getValue('CARGUS_PRICE_PLAN'));
             Configuration::updateValue('CARGUS_DEFAULT_SERVICE', Tools::getValue('CARGUS_DEFAULT_SERVICE'));
@@ -169,15 +172,32 @@ class Cargus extends CarrierModule
         }
 
         $pickupLocations = [];
+        $pricePlans = [];
+        $services = [];
         $apiError = false;
+        
         try {
             $client = new \Cargus\Helper\CargusV3Client();
-            $response = $client->request('PickupLocations', 'GET');
             
-            if (isset($response['error'])) {
-                $apiError = $response['error'];
-            } elseif (is_array($response)) {
-                $pickupLocations = $response;
+            // Numai dacă avem datele minime salvate încercăm request-urile
+            if (!empty(Configuration::get('CARGUS_SUBSCRIPTION_KEY'))) {
+                
+                $responseLoc = $client->request('PickupLocations', 'GET');
+                if (isset($responseLoc['error'])) {
+                    $apiError = $responseLoc['error'];
+                } elseif (is_array($responseLoc)) {
+                    $pickupLocations = $responseLoc;
+                }
+
+                $responsePlans = $client->request('PriceTables', 'GET');
+                if (is_array($responsePlans) && !isset($responsePlans['error'])) {
+                    $pricePlans = $responsePlans;
+                }
+
+                $responseServices = $client->request('Services', 'GET');
+                if (is_array($responseServices) && !isset($responseServices['error'])) {
+                    $services = $responseServices;
+                }
             }
         } catch (Exception $e) {
             $apiError = $e->getMessage();
@@ -185,7 +205,6 @@ class Cargus extends CarrierModule
 
         $ajax_link = $this->context->link->getAdminLink('AdminCargusDebugger');
 
-        // Gestiunea sigură a valorilor implicite pentru URL
         $dbApiUrl = Configuration::get('CARGUS_API_URL');
         $safeApiUrl = (empty($dbApiUrl) || $dbApiUrl === '/') ? 'https://urgentcargus.azure-api.net/api/' : $dbApiUrl;
 
@@ -212,6 +231,8 @@ class Cargus extends CarrierModule
             'cargus_heavy_threshold' => Configuration::get('CARGUS_HEAVY_THRESHOLD') ?: '31',
             
             'pickup_locations' => $pickupLocations,
+            'price_plans' => $pricePlans,
+            'services' => $services,
             'api_error' => $apiError,
             'cargus_ajax_link' => $ajax_link
         ]);
