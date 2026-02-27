@@ -3,7 +3,7 @@
  * @author    Quark
  * @copyright 2026 Quark
  * @license   Proprietary
- * @version   1.0.0
+ * @version   1.0.1
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -22,15 +22,20 @@ class AdminCargusDebuggerController extends ModuleAdminController
         $this->ajax = true;
     }
 
-    public function displayAjaxTestLocations()
+    /**
+     * În PrestaShop 8, cererile cu action=TestLocations caută automat
+     * o metodă numită ajaxProcessTestLocations()
+     */
+    public function ajaxProcessTestLocations()
     {
         $client = new CargusV3Client();
         
         try {
+            // Facem ping pe Counties doar pentru verificarea conexiunii globale
             $response = $client->request('Counties', 'GET');
             
             if (isset($response['error'])) {
-                $this->ajaxDie(json_encode([
+                die(json_encode([
                     'success' => false,
                     'message' => $response['error']
                 ]));
@@ -38,30 +43,30 @@ class AdminCargusDebuggerController extends ModuleAdminController
 
             $count = is_array($response) ? count($response) : 0;
             
-            $this->ajaxDie(json_encode([
+            die(json_encode([
                 'success' => true,
-                'message' => "Succes! Am preluat {$count} județe din Cargus V3."
+                'message' => "Succes! Conexiune validă. Am preluat {$count} județe din Cargus V3."
             ]));
             
         } catch (Exception $e) {
-            $this->ajaxDie(json_encode([
+            die(json_encode([
                 'success' => false,
                 'message' => $e->getMessage()
             ]));
         }
     }
 
-    public function displayAjaxTestTarife()
+    public function ajaxProcessTestTarife()
     {
-        $this->ajaxDie(json_encode([
+        die(json_encode([
             'success' => true,
             'message' => 'Endpoint-ul de calculare tarife răspunde corect (Mock).'
         ]));
     }
 
-    public function displayAjaxTestServicii()
+    public function ajaxProcessTestServicii()
     {
-        $this->ajaxDie(json_encode([
+        die(json_encode([
             'success' => true,
             'message' => 'Endpoint-ul de servicii răspunde corect (Mock).'
         ]));
