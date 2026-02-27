@@ -71,11 +71,13 @@
                     <div class="col-lg-6">
                         <select name="CARGUS_PICKUP_LOCATION" class="form-control">
                             <option value="">-- {l s='Select Location' mod='cargus'} --</option>
-                            {foreach from=$pickupLocations item=location}
-                                <option value="{$location.LocationId|escape:'htmlall':'UTF-8'}" {if $cargus_pickup_location == $location.LocationId}selected{/if}>
-                                    {$location.Name|escape:'htmlall':'UTF-8'} ({$location.LocalityName|escape:'htmlall':'UTF-8'})
-                                </option>
-                            {/foreach}
+                            {if $pickup_locations}
+                                {foreach from=$pickup_locations item=location}
+                                    <option value="{$location.LocationId|escape:'htmlall':'UTF-8'}" {if $cargus_pickup_location == $location.LocationId}selected{/if}>
+                                        {$location.Name|escape:'htmlall':'UTF-8'} ({$location.LocalityName|escape:'htmlall':'UTF-8'})
+                                    </option>
+                                {/foreach}
+                            {/if}
                         </select>
                         <p class="help-block">{l s='Populated automatically from /PickupLocations endpoint.' mod='cargus'}</p>
                     </div>
@@ -147,6 +149,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     var consoleDiv = document.getElementById('cargus-console');
     
+    // Preluăm URL-ul securizat generat de PHP
+    var baseAjaxUrl = '{$cargus_ajax_link|escape:"javascript":"UTF-8"}';
+
     function appendLog(message, isError) {
         var p = document.createElement('div');
         p.style.color = isError ? '#ff4c4c' : '#4caf50';
@@ -164,12 +169,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             appendLog(loadingText, false);
             
-            // Path directly to the ajax.php file we created earlier
-            var targetUrl = '../modules/cargus/ajax.php?action=' + actionName;
+            // Adăugăm flag-ul ajax=1 și parametrul de acțiune
+            var targetUrl = baseAjaxUrl + '&ajax=1&action=' + actionName;
             
             fetch(targetUrl, {
+                method: 'POST',
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
             })
             .then(function(response) { return response.json(); })
@@ -177,13 +184,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 appendLog(data.message, !data.success);
             })
             .catch(function(error) {
-                appendLog('Network error: ' + error.message, true);
+                appendLog('Eroare Rețea/Server: ' + error.message, true);
             });
         });
     }
 
-    runAjaxTest('TestLocations', 'btn-test-locations', 'Requesting locations endpoint...');
-    runAjaxTest('TestTarife', 'btn-test-tarife', 'Requesting pricing endpoint...');
-    runAjaxTest('TestServicii', 'btn-test-servicii', 'Requesting services endpoint...');
+    runAjaxTest('TestLocations', 'btn-test-locations', 'Se testează comunicarea...');
+    runAjaxTest('TestTarife', 'btn-test-tarife', 'Se testează punctul de calcul...');
+    runAjaxTest('TestServicii', 'btn-test-servicii', 'Se testează punctul de servicii...');
 });
 </script>
