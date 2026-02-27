@@ -52,7 +52,7 @@
                     <label class="control-label col-lg-3">{l s='Punct Ridicare Implicit' mod='cargus'}</label>
                     <div class="col-lg-6">
                         <select name="CARGUS_PICKUP_LOCATION" class="form-control">
-                            <option value="">-- {l s='Select Location' mod='cargus'} --</option>
+                            <option value="">-- {l s='Selectează Locația' mod='cargus'} --</option>
                             {if $pickup_locations}
                                 {foreach from=$pickup_locations item=location}
                                     <option value="{$location.LocationId|escape:'htmlall':'UTF-8'}" {if $cargus_pickup_location == $location.LocationId}selected{/if}>
@@ -68,7 +68,14 @@
                     <label class="control-label col-lg-3">{l s='Plan Tarifar' mod='cargus'}</label>
                     <div class="col-lg-6">
                         <select name="CARGUS_PRICE_PLAN" class="form-control">
-                            <option value="{$cargus_price_plan|escape:'htmlall':'UTF-8'}">{$cargus_price_plan|escape:'htmlall':'UTF-8'}</option>
+                            <option value="">-- {l s='Selectează Plan' mod='cargus'} --</option>
+                            {if $price_plans}
+                                {foreach from=$price_plans item=plan}
+                                    <option value="{$plan.PriceTableId|escape:'htmlall':'UTF-8'}" {if $cargus_price_plan == $plan.PriceTableId}selected{/if}>
+                                        {$plan.Name|escape:'htmlall':'UTF-8'}
+                                    </option>
+                                {/foreach}
+                            {/if}
                         </select>
                     </div>
                 </div>
@@ -77,7 +84,14 @@
                     <label class="control-label col-lg-3">{l s='Serviciu Implicit' mod='cargus'}</label>
                     <div class="col-lg-6">
                         <select name="CARGUS_DEFAULT_SERVICE" class="form-control">
-                            <option value="{$cargus_default_service|escape:'htmlall':'UTF-8'}">{$cargus_default_service|escape:'htmlall':'UTF-8'}</option>
+                            <option value="">-- {l s='Selectează Serviciu' mod='cargus'} --</option>
+                            {if $services}
+                                {foreach from=$services item=service}
+                                    <option value="{$service.ServiceId|escape:'htmlall':'UTF-8'}" {if $cargus_default_service == $service.ServiceId}selected{/if}>
+                                        {$service.Name|escape:'htmlall':'UTF-8'}
+                                    </option>
+                                {/foreach}
+                            {/if}
                         </select>
                     </div>
                 </div>
