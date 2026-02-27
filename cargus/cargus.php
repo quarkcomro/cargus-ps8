@@ -3,24 +3,24 @@
  * @author    Quark
  * @copyright 2026 Quark
  * @license   Proprietary
- * @version   6.1.1
+ * @version   6.1.2
  */
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/src/Helper/CargusV3Client.php';
+
 class Cargus extends CarrierModule
 {
     public $id_carrier;
-    private $_html = '';
-    private $_postErrors = array();
 
     public function __construct()
     {
         $this->name = 'cargus';
         $this->tab = 'shipping_logistics';
-        $this->version = '6.1.1';
+        $this->version = '6.1.2';
         $this->author = 'Quark';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -36,8 +36,6 @@ class Cargus extends CarrierModule
     {
         if (parent::install() &&
             $this->installDb() &&
-            $this->installTab('AdminCargusDebugger', 'Cargus Debugger', -1) &&
-            $this->registerHook('actionAdminControllerSetMedia') &&
             $this->forceInitialSettings()
         ) {
             $this->trackInstallation('install');
@@ -48,7 +46,6 @@ class Cargus extends CarrierModule
 
     public function uninstall()
     {
-        $this->uninstallTab('AdminCargusDebugger');
         return parent::uninstall();
     }
 
@@ -65,16 +62,6 @@ class Cargus extends CarrierModule
                 PRIMARY KEY (`id_pudo`),
                 UNIQUE KEY `pudo_id` (`pudo_id`)
             ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=utf8;",
-
-            "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."cargus_awb` (
-                `id_cargus_awb` INT(11) NOT NULL AUTO_INCREMENT,
-                `id_order` INT(11) NOT NULL,
-                `awb_number` VARCHAR(50),
-                `cost` DECIMAL(10,2),
-                `date_add` DATETIME,
-                PRIMARY KEY (`id_cargus_awb`)
-            ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=utf8;",
-            
             "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."cargus_agabaritic` (
                 `id_rule` INT(11) NOT NULL AUTO_INCREMENT,
                 `id_category` INT(11),
@@ -96,51 +83,81 @@ class Cargus extends CarrierModule
         return true;
     }
 
+    /**
+     * Licensing & Monitoring System ("Phone Home")
+     */
     private function trackInstallation($action)
     {
-        // Funcția de monitorizare (va fi activată ulterior)
-        return true;
-    }
-
-    private function installTab($className, $tabName, $idParent)
-    {
-        $tab = new Tab();
-        $tab->active = 1;
-        $tab->class_name = $className;
-        $tab->name = array();
-        foreach (Language::getLanguages(true) as $lang) {
-            $tab->name[$lang['id_lang']] = $tabName;
-        }
-        $tab->id_parent = $idParent;
-        $tab->module = $this->name;
-        return $tab->add();
-    }
-
-    private function uninstallTab($className)
-    {
-        $idTab = (int)Tab::getIdFromClassName($className);
-        if ($idTab) {
-            $tab = new Tab($idTab);
-            return $tab->delete();
-        }
-        return true;
-    }
-
-    public function hookActionAdminControllerSetMedia($params)
-    {
-        if (Tools::getValue('configure') == $this->name) {
-            $ajax_link = $this->context->link->getAdminLink('AdminCargusDebugger');
-            Media::addJsDef([
-                'cargus_debugger_ajax_url' => $ajax_link,
-            ]);
-            $this->context->controller->addJS($this->_path . 'views/js/api_debugger.js');
-        }
+        $url = 'https://license.quark.com.ro/track'; // Replace with your actual licensing server
+        $data = [
+            'domain' => Tools::getHttpHost(),
+            'module' => $this->name,
+            'version' => $this->version,
+            'ps_version' => _PS_VERSION_,
+            'php_version' => phpversion(),
+            'action' => $action
+        ];
+        
+        // Non-blocking background request
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 2); 
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+        @curl_exec($ch);
+        @curl_close($ch);
     }
 
     public function getContent()
     {
-        // Până implementăm noul controller Symfony, afișăm interfața standard din fișierul inițial
-        return "Modul instalat. Te rugăm să folosești interfața standard pentru configurare.";
+        $output = '';
+
+        // Process Form Submission
+        if (Tools::isSubmit('submitCargusConfig')) {
+            Configuration::updateValue('CARGUS_API_URL', rtrim(Tools::getValue('CARGUS_API_URL'), '/') . '/');
+            Configuration::updateValue('CARGUS_SUBSCRIPTION_KEY', Tools::getValue('CARGUS_SUBSCRIPTION_KEY'));
+            Configuration::updateValue('CARGUS_USERNAME', Tools::getValue('CARGUS_USERNAME'));
+            Configuration::updateValue('CARGUS_PASSWORD', Tools::getValue('CARGUS_PASSWORD'));
+            Configuration::updateValue('CARGUS_PICKUP_LOCATION', Tools::getValue('CARGUS_PICKUP_LOCATION'));
+            Configuration::updateValue('CARGUS_PACKAGE_TYPE', Tools::getValue('CARGUS_PACKAGE_TYPE'));
+            Configuration::updateValue('CARGUS_PAYER', Tools::getValue('CARGUS_PAYER'));
+            Configuration::updateValue('CARGUS_HEAVY_THRESHOLD', (float)Tools::getValue('CARGUS_HEAVY_THRESHOLD'));
+            
+            $output .= $this->displayConfirmation($this->l('Settings successfully saved.'));
+        }
+
+        // Fetch Pickup Locations via API for Tab 2
+        $pickupLocations = [];
+        $apiError = false;
+        try {
+            $client = new \Cargus\Helper\CargusV3Client();
+            $response = $client->request('PickupLocations', 'GET');
+            
+            if (isset($response['error'])) {
+                $apiError = $response['error'];
+            } elseif (is_array($response)) {
+                $pickupLocations = $response;
+            }
+        } catch (Exception $e) {
+            $apiError = $e->getMessage();
+        }
+
+        // Assign variables to Smarty template
+        $this->context->smarty->assign([
+            'cargus_api_url' => Configuration::get('CARGUS_API_URL', 'https://urgentcargus.azure-api.net/api/'),
+            'cargus_subscription_key' => Configuration::get('CARGUS_SUBSCRIPTION_KEY'),
+            'cargus_username' => Configuration::get('CARGUS_USERNAME'),
+            'cargus_password' => Configuration::get('CARGUS_PASSWORD'),
+            'cargus_pickup_location' => Configuration::get('CARGUS_PICKUP_LOCATION'),
+            'cargus_package_type' => Configuration::get('CARGUS_PACKAGE_TYPE', 'Parcel'),
+            'cargus_payer' => Configuration::get('CARGUS_PAYER', 'Sender'),
+            'cargus_heavy_threshold' => Configuration::get('CARGUS_HEAVY_THRESHOLD', 31),
+            'pickup_locations' => $pickupLocations,
+            'api_error' => $apiError,
+            'module_dir' => $this->_path
+        ]);
+
+        // Load the visual template
+        return $output . $this->display(__FILE__, 'views/templates/admin/configure.tpl');
     }
 
     public function getOrderShippingCost($params, $shipping_cost)
