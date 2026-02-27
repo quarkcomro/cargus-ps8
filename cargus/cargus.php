@@ -3,7 +3,7 @@
  * @author    Quark
  * @copyright 2026 Quark
  * @license   Proprietary
- * @version   6.1.4
+ * @version   6.1.5
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -20,7 +20,7 @@ class Cargus extends CarrierModule
     {
         $this->name = 'cargus';
         $this->tab = 'shipping_logistics';
-        $this->version = '6.1.4';
+        $this->version = '6.1.5';
         $this->author = 'Quark';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -133,7 +133,6 @@ class Cargus extends CarrierModule
     {
         $output = '';
 
-        // Auto-healing logic: If the debugger tab is missing from DB, install it now.
         if ((int)Tab::getIdFromClassName('AdminCargusDebugger') == 0) {
             $this->installTab('AdminCargusDebugger', 'Cargus Debugger', -1);
         }
@@ -143,9 +142,23 @@ class Cargus extends CarrierModule
             Configuration::updateValue('CARGUS_SUBSCRIPTION_KEY', Tools::getValue('CARGUS_SUBSCRIPTION_KEY'));
             Configuration::updateValue('CARGUS_USERNAME', Tools::getValue('CARGUS_USERNAME'));
             Configuration::updateValue('CARGUS_PASSWORD', Tools::getValue('CARGUS_PASSWORD'));
+            
+            // Tab 2 Fields
             Configuration::updateValue('CARGUS_PICKUP_LOCATION', Tools::getValue('CARGUS_PICKUP_LOCATION'));
-            Configuration::updateValue('CARGUS_PACKAGE_TYPE', Tools::getValue('CARGUS_PACKAGE_TYPE'));
+            Configuration::updateValue('CARGUS_PRICE_PLAN', Tools::getValue('CARGUS_PRICE_PLAN'));
+            Configuration::updateValue('CARGUS_DEFAULT_SERVICE', Tools::getValue('CARGUS_DEFAULT_SERVICE'));
             Configuration::updateValue('CARGUS_PAYER', Tools::getValue('CARGUS_PAYER'));
+            Configuration::updateValue('CARGUS_COD_TYPE', Tools::getValue('CARGUS_COD_TYPE'));
+            Configuration::updateValue('CARGUS_SHIPMENT_TYPE', Tools::getValue('CARGUS_SHIPMENT_TYPE'));
+            
+            Configuration::updateValue('CARGUS_OPEN_PACKAGE', (int)Tools::getValue('CARGUS_OPEN_PACKAGE'));
+            Configuration::updateValue('CARGUS_SATURDAY_DELIVERY', (int)Tools::getValue('CARGUS_SATURDAY_DELIVERY'));
+            Configuration::updateValue('CARGUS_INSURANCE', (int)Tools::getValue('CARGUS_INSURANCE'));
+            
+            Configuration::updateValue('CARGUS_BASIC_PRICE_STD', Tools::getValue('CARGUS_BASIC_PRICE_STD'));
+            Configuration::updateValue('CARGUS_BASIC_PRICE_PUDO', Tools::getValue('CARGUS_BASIC_PRICE_PUDO'));
+            Configuration::updateValue('CARGUS_EXTRA_KG_PRICE', Tools::getValue('CARGUS_EXTRA_KG_PRICE'));
+            Configuration::updateValue('CARGUS_COD_FEE', Tools::getValue('CARGUS_COD_FEE'));
             Configuration::updateValue('CARGUS_HEAVY_THRESHOLD', (float)Tools::getValue('CARGUS_HEAVY_THRESHOLD'));
             
             $output .= $this->displayConfirmation($this->l('Setările au fost salvate cu succes.'));
@@ -173,10 +186,23 @@ class Cargus extends CarrierModule
             'cargus_subscription_key' => Configuration::get('CARGUS_SUBSCRIPTION_KEY'),
             'cargus_username' => Configuration::get('CARGUS_USERNAME'),
             'cargus_password' => Configuration::get('CARGUS_PASSWORD'),
+            
             'cargus_pickup_location' => Configuration::get('CARGUS_PICKUP_LOCATION'),
-            'cargus_package_type' => Configuration::get('CARGUS_PACKAGE_TYPE', 'Parcel'),
-            'cargus_payer' => Configuration::get('CARGUS_PAYER', 'Sender'),
+            'cargus_price_plan' => Configuration::get('CARGUS_PRICE_PLAN'),
+            'cargus_default_service' => Configuration::get('CARGUS_DEFAULT_SERVICE'),
+            'cargus_payer' => Configuration::get('CARGUS_PAYER', 'Expeditor'),
+            'cargus_cod_type' => Configuration::get('CARGUS_COD_TYPE', 'Numerar'),
+            'cargus_shipment_type' => Configuration::get('CARGUS_SHIPMENT_TYPE', 'Plic'),
+            'cargus_open_package' => Configuration::get('CARGUS_OPEN_PACKAGE', 0),
+            'cargus_saturday_delivery' => Configuration::get('CARGUS_SATURDAY_DELIVERY', 0),
+            'cargus_insurance' => Configuration::get('CARGUS_INSURANCE', 0),
+            
+            'cargus_basic_price_std' => Configuration::get('CARGUS_BASIC_PRICE_STD'),
+            'cargus_basic_price_pudo' => Configuration::get('CARGUS_BASIC_PRICE_PUDO'),
+            'cargus_extra_kg_price' => Configuration::get('CARGUS_EXTRA_KG_PRICE', 0),
+            'cargus_cod_fee' => Configuration::get('CARGUS_COD_FEE'),
             'cargus_heavy_threshold' => Configuration::get('CARGUS_HEAVY_THRESHOLD', 31),
+            
             'pickup_locations' => $pickupLocations,
             'api_error' => $apiError,
             'cargus_ajax_link' => $ajax_link
