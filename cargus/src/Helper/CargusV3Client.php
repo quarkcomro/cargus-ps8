@@ -17,7 +17,7 @@ class CargusV3Client
     private $apiUrl;
     private $subscriptionKey;
     private $token = null;
-    private $timeout = 10; // Timeout in seconds to prevent checkout blocking
+    private $timeout = 10; // Timeout în secunde pentru a preveni blocarea checkout-ului
 
     public function __construct()
     {
@@ -26,11 +26,7 @@ class CargusV3Client
     }
 
     /**
-     * Normalizes Romanian diacritics to standard Latin characters.
-     * Handles both standard (comma) and legacy (cedilla) diacritics.
-     *
-     * @param string $string
-     * @return string
+     * Normalizează diacriticele (sedilă și virgulă)
      */
     public static function normalizeString($string)
     {
@@ -40,8 +36,8 @@ class CargusV3Client
 
         $search = [
             'ă', 'Ă', 'â', 'Â', 'î', 'Î',
-            'ș', 'Ș', 'ț', 'Ț', // Standard (comma)
-            'ş', 'Ş', 'ţ', 'Ţ'  // Legacy (cedilla)
+            'ș', 'Ș', 'ț', 'Ț', // Standard (virgulă)
+            'ş', 'Ş', 'ţ', 'Ţ'  // Vechi (sedilă)
         ];
         $replace = [
             'a', 'A', 'a', 'A', 'i', 'I',
@@ -53,9 +49,7 @@ class CargusV3Client
     }
 
     /**
-     * Authenticates the user and retrieves the Bearer token.
-     * * @return string|bool Token on success, false on failure
-     * @throws \Exception If authentication fails
+     * Autentificarea pentru preluarea token-ului
      */
     public function login()
     {
@@ -63,31 +57,24 @@ class CargusV3Client
         $password = \Configuration::get('CARGUS_PASSWORD');
 
         if (!$username || !$password || !$this->subscriptionKey) {
-            throw new \Exception('Missing API credentials. Please configure them in the module settings.');
+            throw new \Exception('Lipsesc credențiale API. Te rugăm să le configurezi în setările modulului.');
         }
 
         $response = $this->request('LoginUser', 'POST', [
             'UserName' => $username,
             'Password' => $password
-        ], false); // false = do not use bearer token for this request
+        ], false);
 
         if (isset($response['error'])) {
-            // Translate technical errors to human-readable format
-            throw new \Exception('Authentication failed: ' . $this->translateError($response['error']));
+            throw new \Exception('Autentificare eșuată: ' . $this->translateError($response['error']));
         }
 
-        $this->token = $response; // Cargus V3 usually returns the token as a direct string or in a specific key
+        $this->token = $response; 
         return $this->token;
     }
 
     /**
-     * Centralized method to handle all cURL requests to Cargus API.
-     *
-     * @param string $endpoint The API endpoint (e.g., 'Counties', 'Localities')
-     * @param string $method HTTP Method (GET, POST, PUT)
-     * @param array $data Payload for POST/PUT requests
-     * @param bool $useAuth Token usage flag
-     * @return mixed Array or string containing the response
+     * Metoda centralizată pentru cereri API
      */
     public function request($endpoint, $method = 'GET', $data = [], $useAuth = true)
     {
@@ -99,6 +86,7 @@ class CargusV3Client
             'Accept: application/json'
         ];
 
+        // Dacă endpoint-ul necesită autentificare (majoritatea o fac), preluăm token-ul
         if ($useAuth) {
             if (!$this->token) {
                 $this->login();
@@ -126,13 +114,13 @@ class CargusV3Client
         curl_close($ch);
 
         if ($curlError) {
-            return ['error' => 'Connection Error: ' . $curlError];
+            return ['error' => 'Eroare conexiune server: ' . $curlError];
         }
 
         $decodedResponse = json_decode($response, true);
 
         if ($httpCode >= 400) {
-            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'HTTP Error ' . $httpCode;
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Eroare HTTP ' . $httpCode;
             return ['error' => $errorMessage, 'code' => $httpCode];
         }
 
@@ -140,20 +128,16 @@ class CargusV3Client
     }
 
     /**
-     * Translates raw API errors into user-friendly messages.
-     *
-     * @param string $rawError
-     * @return string
+     * Traducerea erorilor brute în mesaje prietenoase
      */
     private function translateError($rawError)
     {
-        // Add specific mapping based on Cargus V3 documentation
         if (strpos($rawError, '401') !== false) {
-            return 'Invalid credentials or expired subscription key.';
+            return 'Credențiale incorecte sau Subscription Key expirat.';
         }
         if (strpos($rawError, 'timeout') !== false) {
-            return 'The Cargus server took too long to respond. Please try again.';
+            return 'Serverul Cargus a răspuns prea greu. Te rugăm să încerci din nou.';
         }
-        return $rawError; // Fallback to raw error if no translation matches
+        return $rawError; 
     }
 }
