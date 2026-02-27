@@ -3,7 +3,7 @@
  * @author    Quark
  * @copyright 2026 Quark
  * @license   Proprietary
- * @version   6.1.5
+ * @version   6.1.6
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -20,7 +20,7 @@ class Cargus extends CarrierModule
     {
         $this->name = 'cargus';
         $this->tab = 'shipping_logistics';
-        $this->version = '6.1.5';
+        $this->version = '6.1.6';
         $this->author = 'Quark';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -138,7 +138,11 @@ class Cargus extends CarrierModule
         }
 
         if (Tools::isSubmit('submitCargusConfig')) {
-            Configuration::updateValue('CARGUS_API_URL', rtrim(Tools::getValue('CARGUS_API_URL'), '/') . '/');
+            $submittedApiUrl = trim(Tools::getValue('CARGUS_API_URL'));
+            if (!empty($submittedApiUrl) && $submittedApiUrl !== '/') {
+                Configuration::updateValue('CARGUS_API_URL', rtrim($submittedApiUrl, '/') . '/');
+            }
+            
             Configuration::updateValue('CARGUS_SUBSCRIPTION_KEY', Tools::getValue('CARGUS_SUBSCRIPTION_KEY'));
             Configuration::updateValue('CARGUS_USERNAME', Tools::getValue('CARGUS_USERNAME'));
             Configuration::updateValue('CARGUS_PASSWORD', Tools::getValue('CARGUS_PASSWORD'));
@@ -181,8 +185,12 @@ class Cargus extends CarrierModule
 
         $ajax_link = $this->context->link->getAdminLink('AdminCargusDebugger');
 
+        // Gestiunea sigură a valorilor implicite pentru URL
+        $dbApiUrl = Configuration::get('CARGUS_API_URL');
+        $safeApiUrl = (empty($dbApiUrl) || $dbApiUrl === '/') ? 'https://urgentcargus.azure-api.net/api/' : $dbApiUrl;
+
         $this->context->smarty->assign([
-            'cargus_api_url' => Configuration::get('CARGUS_API_URL', 'https://urgentcargus.azure-api.net/api/'),
+            'cargus_api_url' => $safeApiUrl,
             'cargus_subscription_key' => Configuration::get('CARGUS_SUBSCRIPTION_KEY'),
             'cargus_username' => Configuration::get('CARGUS_USERNAME'),
             'cargus_password' => Configuration::get('CARGUS_PASSWORD'),
@@ -190,18 +198,18 @@ class Cargus extends CarrierModule
             'cargus_pickup_location' => Configuration::get('CARGUS_PICKUP_LOCATION'),
             'cargus_price_plan' => Configuration::get('CARGUS_PRICE_PLAN'),
             'cargus_default_service' => Configuration::get('CARGUS_DEFAULT_SERVICE'),
-            'cargus_payer' => Configuration::get('CARGUS_PAYER', 'Expeditor'),
-            'cargus_cod_type' => Configuration::get('CARGUS_COD_TYPE', 'Numerar'),
-            'cargus_shipment_type' => Configuration::get('CARGUS_SHIPMENT_TYPE', 'Plic'),
-            'cargus_open_package' => Configuration::get('CARGUS_OPEN_PACKAGE', 0),
-            'cargus_saturday_delivery' => Configuration::get('CARGUS_SATURDAY_DELIVERY', 0),
-            'cargus_insurance' => Configuration::get('CARGUS_INSURANCE', 0),
+            'cargus_payer' => Configuration::get('CARGUS_PAYER') ?: 'Expeditor',
+            'cargus_cod_type' => Configuration::get('CARGUS_COD_TYPE') ?: 'Numerar',
+            'cargus_shipment_type' => Configuration::get('CARGUS_SHIPMENT_TYPE') ?: 'Plic',
+            'cargus_open_package' => Configuration::get('CARGUS_OPEN_PACKAGE') ?: 0,
+            'cargus_saturday_delivery' => Configuration::get('CARGUS_SATURDAY_DELIVERY') ?: 0,
+            'cargus_insurance' => Configuration::get('CARGUS_INSURANCE') ?: 0,
             
             'cargus_basic_price_std' => Configuration::get('CARGUS_BASIC_PRICE_STD'),
             'cargus_basic_price_pudo' => Configuration::get('CARGUS_BASIC_PRICE_PUDO'),
-            'cargus_extra_kg_price' => Configuration::get('CARGUS_EXTRA_KG_PRICE', 0),
+            'cargus_extra_kg_price' => Configuration::get('CARGUS_EXTRA_KG_PRICE') ?: '0',
             'cargus_cod_fee' => Configuration::get('CARGUS_COD_FEE'),
-            'cargus_heavy_threshold' => Configuration::get('CARGUS_HEAVY_THRESHOLD', 31),
+            'cargus_heavy_threshold' => Configuration::get('CARGUS_HEAVY_THRESHOLD') ?: '31',
             
             'pickup_locations' => $pickupLocations,
             'api_error' => $apiError,
